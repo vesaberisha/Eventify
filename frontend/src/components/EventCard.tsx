@@ -4,10 +4,10 @@ interface EventProps {
   event: {
     id: number;
     title: string;
-    date: string;
+    starts_at: string;
     location: string;
-    price: number;
-    image: string;
+    price_eur: number;
+    image_url: string | null;
   };
 }
 
@@ -15,7 +15,7 @@ export default function EventCard({ event }: EventProps) {
   return (
     <div className="bg-white rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300">
       <img 
-        src={event.image} 
+        src={event.image_url || "https://picsum.photos/800/600"} 
         alt={event.title} 
         className="w-full h-64 object-cover" 
       />
@@ -24,7 +24,7 @@ export default function EventCard({ event }: EventProps) {
         
         <div className="flex items-center gap-2 text-gray-600 mb-2">
           <Calendar size={20} />
-          <span className="text-lg">{new Date(event.date).toLocaleDateString('sq-AL')}</span>
+          <span className="text-lg">{new Date(event.starts_at).toLocaleDateString('sq-AL')}</span>
         </div>
         
         <div className="flex items-center gap-2 text-gray-600 mb-6">
@@ -35,7 +35,7 @@ export default function EventCard({ event }: EventProps) {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-1 text-3xl font-semibold text-emerald-600">
             <DollarSign size={28} />
-            {event.price === 0 ? 'Falas' : `${event.price} €`}
+            {event.price_eur === 0 ? 'Falas' : `${event.price_eur} €`}
           </div>
           <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 rounded-2xl text-lg font-medium transition">
             Detaje
