@@ -1,0 +1,286 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  firstName     String
+  lastName      String
+  email         String   @unique
+  passwordHash  String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdBy     String?
+  updatedBy     String?
+
+  userRoles     UserRole[]
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  files         File[]
+  bookings      Booking[]
+  reviews       Review[]
+  favorites     UserFavorite[]
+  organizerEvents Event[] @relation("OrganizerEvents")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  userRoles     UserRole[]
+  rolePermissions RolePermission[]
+}
+
+model UserRole {
+  id         String   @id @default(cuid())
+  userId     String
+  roleId     String
+  assignedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  id           String @id @default(cuid())
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entity     String
+  entityId   String?
+  oldValue   String?
+  newValue   String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Setting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model File {
+  id          String   @id @default(cuid())
+  entity      String   // "event", "user", "venue"
+  entityId    String
+  filename    String
+  filePath    String
+  fileSize    Int
+  uploadedBy  String
+  eventId     String?
+  createdAt   DateTime @default(now())
+
+  uploadedByUser User  @relation(fields: [uploadedBy], references: [id])
+  event            Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  events      EventCategory[]
+}
+
+model Venue {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  capacity    Int
+  createdAt   DateTime @default(now())
+  events      Event[]
+}
+
+model Event {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  startDate     DateTime
+  endDate       DateTime
+  price         Float?
+  capacity      Int
+  venueId       String
+  organizerId   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdBy     String
+  updatedBy     String?
+
+  venue         Venue    @relation(fields: [venueId], references: [id])
+  organizer     User     @relation("OrganizerEvents", fields: [organizerId], references: [id])
+  categories    EventCategory[]
+  ticketTypes   TicketType[]
+  bookings      Booking[]
+  reviews       Review[]
+  tags          EventTag[]
+  images        File[]
+  schedules     EventSchedule[]
+  favorites     UserFavorite[]
+}
+
+model EventCategory {
+  eventId    String
+  categoryId String
+
+  event    Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, categoryId])
+}
+
+model TicketType {
+  id        String   @id @default(cuid())
+  name      String   // VIP, Regular, EarlyBird
+  price     Float
+  quantity  Int
+  eventId   String
+
+  event     Event    @relation(fields: [eventId], references: [id])
+  tickets   Ticket[]
+}
+
+model Ticket {
+  id            String   @id @default(cuid())
+  ticketTypeId  String
+  bookingId     String?
+  qrCode        String   @unique
+  isUsed        Boolean  @default(false)
+
+  ticketType    TicketType @relation(fields: [ticketTypeId], references: [id])
+  booking       Booking?   @relation(fields: [bookingId], references: [id])
+}
+
+model Booking {
+  id          String   @id @default(cuid())
+  userId      String
+  eventId     String
+  totalAmount Float
+  status      String   @default("pending") // pending, confirmed, cancelled
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+  event       Event    @relation(fields: [eventId], references: [id])
+  tickets     Ticket[]
+  payment     Payment?
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  bookingId     String   @unique
+  stripeId      String?
+  amount        Float
+  status        String   // succeeded, failed
+  createdAt     DateTime @default(now())
+
+  booking       Booking  @relation(fields: [bookingId], references: [id])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  event     Event    @relation(fields: [eventId], references: [id])
+}
+
+model Tag {
+  id   String @id @default(cuid())
+  name String @unique
+
+  events EventTag[]
+}
+
+model EventTag {
+  eventId String
+  tagId   String
+
+  event Event @relation(fields: [eventId], references: [id])
+  tag   Tag   @relation(fields: [tagId], references: [id])
+
+  @@id([eventId, tagId])
+}
+
+model Coupon {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  discount    Float
+  expiryDate  DateTime
+  createdAt   DateTime @default(now())
+}
+
+model UserFavorite {
+  userId  String
+  eventId String
+
+  user  User  @relation(fields: [userId], references: [id])
+  event Event @relation(fields: [eventId], references: [id])
+
+  @@id([userId, eventId])
+}
+
+model EventSchedule {
+  id        String   @id @default(cuid())
+  eventId   String
+  title     String
+  startTime DateTime
+  endTime   DateTime
+
+  event     Event    @relation(fields: [eventId], references: [id])
+}
