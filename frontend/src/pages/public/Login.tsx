@@ -1,7 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+import { apiUrl } from "../../lib/apiBase";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -17,7 +16,7 @@ export default function Login() {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      const response = await fetch(apiUrl("/api/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
@@ -35,7 +34,9 @@ export default function Login() {
       setPassword("");
     } catch (submitError) {
       if (submitError instanceof TypeError) {
-        setError("Nuk u lidh me serverin. Verifiko qe backend po punon ne http://localhost:4000.");
+        setError(
+          "Nuk u lidh me serverin. Nise backend-in dhe (nese proxy nuk perputhet) vendos VITE_DEV_PROXY_TARGET ne .env te frontend-it."
+        );
       } else {
         setError(submitError instanceof Error ? submitError.message : "Gabim i papritur.");
       }
