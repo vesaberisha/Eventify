@@ -1,0 +1,4 @@
+# Local secrets (database URL, passwords, JWT keys) — copy from .env.example
+.env
+.env.*
+!.env.example
