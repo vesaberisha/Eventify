@@ -15,13 +15,16 @@ const io = new Server(httpServer, { cors: { origin: "*" } });
 app.use(cors());
 app.use(express.json());
 
-// Root (browser / health check — API lives under /api)
+// Root + health (no route for `/` yields "Cannot GET /" from Express)
 app.get("/", (_req, res) => {
   res.json({
-    service: "Eventify API",
+    name: "eventify-backend",
+    ok: true,
     auth: "/api/auth",
-    hint: "Open the app at your Vite dev URL (e.g. http://localhost:5173), not this port, unless you only need the API."
   });
+});
+app.get("/health", (_req, res) => {
+  res.json({ ok: true });
 });
 
 // Routes
@@ -32,19 +35,7 @@ io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 });
 
-const PORT = Number(process.env.PORT) || 5000;
-
-httpServer.on("error", (err) => {
-  if (err.code === "EADDRINUSE") {
-    console.error(
-      `Port ${PORT} is already in use (another Node/backend instance?). Close it or change PORT in .env. On Windows: netstat -ano | findstr ":${PORT}" then taskkill /PID <pid> /F`
-    );
-  } else {
-    console.error(err);
-  }
-  process.exit(1);
-});
-
+const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
