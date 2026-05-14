@@ -7,6 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ==================== TABELAT E DETYRUESHME (10) ====================
+
 model User {
   id            String   @id @default(cuid())
   firstName     String
@@ -27,7 +29,7 @@ model User {
   bookings      Booking[]
   reviews       Review[]
   favorites     UserFavorite[]
-  organizerEvents Event[] @relation("OrganizerEvents")
+  organizedEvents Event[] @relation("Organizer")
 }
 
 model Role {
@@ -36,7 +38,7 @@ model Role {
   description String?
   createdAt   DateTime @default(now())
 
-  userRoles     UserRole[]
+  userRoles      UserRole[]
   rolePermissions RolePermission[]
 }
 
@@ -48,6 +50,8 @@ model UserRole {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
 }
 
 model Permission {
@@ -63,8 +67,10 @@ model RolePermission {
   roleId       String
   permissionId String
 
-  role       Role       @relation(fields: [roleId], references: [id])
-  permission Permission @relation(fields: [permissionId], references: [id])
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
 }
 
 model RefreshToken {
@@ -114,7 +120,7 @@ model Setting {
 
 model File {
   id          String   @id @default(cuid())
-  entity      String   // "event", "user", "venue"
+  entity      String
   entityId    String
   filename    String
   filePath    String
@@ -124,7 +130,46 @@ model File {
   createdAt   DateTime @default(now())
 
   uploadedByUser User  @relation(fields: [uploadedBy], references: [id])
-  event            Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  event          Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+// ==================== TABELAT SPECIFIKE PËR EVENTIFY ====================
+
+model Venue {
+  id        String  @id @default(cuid())
+  name      String
+  address   String
+  capacity  Int
+  createdAt DateTime @default(now())
+
+  events Event[]
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  price       Float?
+  capacity    Int      @default(100)
+  venueId     String
+  organizerId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  updatedBy   String?
+
+  venue       Venue         @relation(fields: [venueId], references: [id])
+  organizer   User          @relation("Organizer", fields: [organizerId], references: [id])
+  categories  EventCategory[]
+  tags        EventTag[]
+  schedules   EventSchedule[]
+  ticketTypes TicketType[]
+  bookings    Booking[]
+  reviews     Review[]
+  favorites   UserFavorite[]
+  images      File[]
 }
 
 model Category {
@@ -132,43 +177,8 @@ model Category {
   name        String   @unique
   description String?
   createdAt   DateTime @default(now())
-  events      EventCategory[]
-}
 
-model Venue {
-  id          String   @id @default(cuid())
-  name        String
-  address     String
-  capacity    Int
-  createdAt   DateTime @default(now())
-  events      Event[]
-}
-
-model Event {
-  id            String   @id @default(cuid())
-  title         String
-  description   String?
-  startDate     DateTime
-  endDate       DateTime
-  price         Float?
-  capacity      Int
-  venueId       String
-  organizerId   String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  createdBy     String
-  updatedBy     String?
-
-  venue         Venue    @relation(fields: [venueId], references: [id])
-  organizer     User     @relation("OrganizerEvents", fields: [organizerId], references: [id])
-  categories    EventCategory[]
-  ticketTypes   TicketType[]
-  bookings      Booking[]
-  reviews       Review[]
-  tags          EventTag[]
-  images        File[]
-  schedules     EventSchedule[]
-  favorites     UserFavorite[]
+  events EventCategory[]
 }
 
 model EventCategory {
@@ -181,26 +191,55 @@ model EventCategory {
   @@id([eventId, categoryId])
 }
 
-model TicketType {
-  id        String   @id @default(cuid())
-  name      String   // VIP, Regular, EarlyBird
-  price     Float
-  quantity  Int
-  eventId   String
+model Tag {
+  id     String @id @default(cuid())
+  name   String @unique
 
-  event     Event    @relation(fields: [eventId], references: [id])
-  tickets   Ticket[]
+  events EventTag[]
+}
+
+model EventTag {
+  eventId String
+  tagId   String
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, tagId])
+}
+
+model EventSchedule {
+  id        String   @id @default(cuid())
+  eventId   String
+  title     String
+  startTime DateTime
+  endTime   DateTime
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model TicketType {
+  id       String  @id @default(cuid())
+  eventId  String
+  name     String   // VIP, Regular, Early Bird
+  price    Float
+  quantity Int
+  sold     Int     @default(0)
+
+  event   Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tickets Ticket[]
 }
 
 model Ticket {
-  id            String   @id @default(cuid())
-  ticketTypeId  String
-  bookingId     String?
-  qrCode        String   @unique
-  isUsed        Boolean  @default(false)
+  id           String  @id @default(cuid())
+  ticketTypeId String
+  bookingId    String?
+  qrCode       String  @unique
+  isUsed       Boolean @default(false)
 
-  ticketType    TicketType @relation(fields: [ticketTypeId], references: [id])
-  booking       Booking?   @relation(fields: [bookingId], references: [id])
+  ticketType TicketType @relation(fields: [ticketTypeId], references: [id])
+  booking    Booking?    @relation(fields: [bookingId], references: [id])
 }
 
 model Booking {
@@ -211,63 +250,39 @@ model Booking {
   status      String   @default("pending") // pending, confirmed, cancelled
   createdAt   DateTime @default(now())
 
-  user        User     @relation(fields: [userId], references: [id])
-  event       Event    @relation(fields: [eventId], references: [id])
-  tickets     Ticket[]
-  payment     Payment?
+  user    User     @relation(fields: [userId], references: [id])
+  event   Event    @relation(fields: [eventId], references: [id])
+  tickets Ticket[]
+  payment Payment?
 }
 
 model Payment {
-  id            String   @id @default(cuid())
-  bookingId     String   @unique
-  stripeId      String?
-  amount        Float
-  status        String   // succeeded, failed
-  createdAt     DateTime @default(now())
+  id        String  @id @default(cuid())
+  bookingId String  @unique
+  stripeId  String?
+  amount    Float
+  status    String  // succeeded, failed, pending
+  createdAt DateTime @default(now())
 
-  booking       Booking  @relation(fields: [bookingId], references: [id])
+  booking Booking @relation(fields: [bookingId], references: [id])
 }
 
 model Review {
   id        String   @id @default(cuid())
   userId    String
   eventId   String
-  rating    Int
+  rating    Int      @default(5)
   comment   String?
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id])
-  event     Event    @relation(fields: [eventId], references: [id])
-}
-
-model Tag {
-  id   String @id @default(cuid())
-  name String @unique
-
-  events EventTag[]
-}
-
-model EventTag {
-  eventId String
-  tagId   String
-
+  user  User  @relation(fields: [userId], references: [id])
   event Event @relation(fields: [eventId], references: [id])
-  tag   Tag   @relation(fields: [tagId], references: [id])
-
-  @@id([eventId, tagId])
-}
-
-model Coupon {
-  id          String   @id @default(cuid())
-  code        String   @unique
-  discount    Float
-  expiryDate  DateTime
-  createdAt   DateTime @default(now())
 }
 
 model UserFavorite {
   userId  String
   eventId String
+  createdAt DateTime @default(now())
 
   user  User  @relation(fields: [userId], references: [id])
   event Event @relation(fields: [eventId], references: [id])
@@ -275,12 +290,10 @@ model UserFavorite {
   @@id([userId, eventId])
 }
 
-model EventSchedule {
-  id        String   @id @default(cuid())
-  eventId   String
-  title     String
-  startTime DateTime
-  endTime   DateTime
-
-  event     Event    @relation(fields: [eventId], references: [id])
+model Coupon {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  discount   Float
+  expiryDate DateTime
+  createdAt  DateTime @default(now())
 }
