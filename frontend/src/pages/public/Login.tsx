@@ -1,102 +1,79 @@
-import { FormEvent, useState } from "react";
-import { Link } from "react-router-dom";
-import { apiUrl } from "../../lib/apiBase";
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import api from '../../services/api';
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setLoading(true);
-    setMessage(null);
-    setError(null);
+    setError('');
 
     try {
-      const response = await fetch(apiUrl("/api/auth/login"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await response.json();
+      const res = await api.post('/api/auth/login', formData);
+      
+      localStorage.setItem('accessToken', res.data.accessToken);
+      localStorage.setItem('refreshToken', res.data.refreshToken);
+      localStorage.setItem('user', JSON.stringify(res.data.user));
 
-      if (!response.ok) {
-        throw new Error(data.message || "Login deshtoi.");
-      }
-
-      localStorage.setItem("eventify_access_token", data.accessToken);
-      localStorage.setItem("eventify_refresh_token", data.refreshToken);
-      setMessage("Login me sukses.");
-      setEmail("");
-      setPassword("");
-    } catch (submitError) {
-      if (submitError instanceof TypeError) {
-        setError(
-          "Nuk u lidh me serverin. Nise backend-in dhe (nese proxy nuk perputhet) vendos VITE_DEV_PROXY_TARGET ne .env te frontend-it."
-        );
-      } else {
-        setError(submitError instanceof Error ? submitError.message : "Gabim i papritur.");
-      }
+      alert('Login successful!');
+      navigate('/'); // Shko në Home
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed');
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <main className="max-w-md mx-auto px-6 py-10">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">Hyr ne llogari</h1>
-      <p className="text-gray-600 mb-6">Login me email dhe password.</p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-xl">
+        <h2 className="text-3xl font-bold text-center mb-8">Login</h2>
+        
+        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="login-email">
-            Email
-          </label>
+        <form onSubmit={handleSubmit} className="space-y-6">
           <input
-            id="login-email"
             type="email"
+            name="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border rounded-2xl focus:outline-none focus:border-indigo-600"
             required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="login-password">
-            Password
-          </label>
           <input
-            id="login-password"
             type="password"
+            name="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border rounded-2xl focus:outline-none focus:border-indigo-600"
             required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-        </div>
+          
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-semibold hover:bg-indigo-700 transition disabled:opacity-50"
+          >
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-indigo-600 text-white py-2 rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-70"
-        >
-          {loading ? "Duke bere login..." : "Login"}
-        </button>
-      </form>
-
-      {message ? <p className="mt-4 text-green-700">{message}</p> : null}
-      {error ? <p className="mt-4 text-red-600">{error}</p> : null}
-
-      <p className="mt-6 text-sm text-gray-600">
-        Nuk ke llogari?{" "}
-        <Link to="/register" className="text-indigo-600 font-medium hover:underline">
-          Register
-        </Link>
-      </p>
-    </main>
+        <p className="text-center mt-6">
+          Nuk ke llogari?{' '}
+          <Link to="/register" className="text-indigo-600 font-medium">Regjistrohu</Link>
+        </p>
+      </div>
+    </div>
   );
 }
