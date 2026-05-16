@@ -1,10 +1,21 @@
 import Stripe from "stripe";
 import { PrismaClient } from "@prisma/client";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const prisma = new PrismaClient();
+const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+
+function getStripe() {
+  const stripeSecret = process.env.STRIPE_SECRET_KEY?.trim().replace(/^["']|["']$/g, "");
+  if (!stripeSecret?.startsWith("sk_")) {
+    throw new Error(
+      "STRIPE_SECRET_KEY duhet të jetë Secret Key (sk_test_...), jo Restricted Key (rk_...)"
+    );
+  }
+  return new Stripe(stripeSecret);
+}
 
 export const createPaymentSession = async (bookingId, userId) => {
+  const stripe = getStripe();
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
     include: { event: true },
@@ -29,8 +40,8 @@ export const createPaymentSession = async (bookingId, userId) => {
       },
     ],
     mode: "payment",
-    success_url: `http://localhost:3000/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `http://localhost:3000/payment/cancel`,
+    success_url: `${frontendUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${frontendUrl}/payment/cancel`,
     metadata: {
       bookingId: booking.id,
       userId: userId,

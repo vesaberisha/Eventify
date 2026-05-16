@@ -57,7 +57,28 @@ async function main() {
     skipDuplicates: true
   });
 
-  console.log('✅ Seed completed! 2 events created.');
+  const ticketTypeTemplates = [
+    { name: 'Regular', priceMultiplier: 1, quantity: 200 },
+    { name: 'VIP', priceMultiplier: 1.8, quantity: 50 },
+  ];
+
+  const events = await prisma.event.findMany({ include: { ticketTypes: true } });
+
+  for (const event of events) {
+    if (event.ticketTypes.length > 0) continue;
+
+    const basePrice = event.price ?? 25;
+    await prisma.ticketType.createMany({
+      data: ticketTypeTemplates.map((t) => ({
+        eventId: event.id,
+        name: t.name,
+        price: Math.round(basePrice * t.priceMultiplier * 100) / 100,
+        quantity: t.quantity,
+      })),
+    });
+  }
+
+  console.log(`✅ Seed completed! ${events.length} event(s), ticket types ensured.`);
 }
 
 main()
