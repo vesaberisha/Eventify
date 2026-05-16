@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import authRoutes from "./routes/auth.routes.js";
 import eventRoutes from "./routes/event.routes.js";
+import bookingRoutes from "./routes/booking.routes.js";
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ const prisma = new PrismaClient();
 
 app.use(cors());
 app.use(express.json());
+app.use("/api/bookings", bookingRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "Eventify Backend is running! 🚀" });

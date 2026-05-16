@@ -2,75 +2,64 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
-const SEED_ORGANIZER_EMAIL = 'organizer@eventify.local';
 
 async function main() {
-  console.log('🌱 Seeding database...');
-
-  const passwordHash = await bcrypt.hash('password123', 10);
   const organizer = await prisma.user.upsert({
-    where: { email: SEED_ORGANIZER_EMAIL },
+    where: { email: 'organizer@eventify.local' },
     update: {},
     create: {
-      firstName: 'Seed',
+      id: 'user-organizer-1',
+      firstName: 'Demo',
       lastName: 'Organizer',
-      email: SEED_ORGANIZER_EMAIL,
-      passwordHash,
+      email: 'organizer@eventify.local',
+      passwordHash: await bcrypt.hash('password123', 10),
     },
   });
 
-  // Krijo një Venue nëse nuk ekziston
-  let venue = await prisma.venue.findFirst();
-  if (!venue) {
-    venue = await prisma.venue.create({
-      data: {
-        name: "UBT Campus",
-        address: "Prishtinë, Kosovo",
-        capacity: 500
-      }
-    });
-  }
+  // Krijo Venue
+  const venue = await prisma.venue.upsert({
+    where: { id: 'venue-1' },
+    update: {},
+    create: {
+      id: 'venue-1',
+      name: "UBT Amphitheatre",
+      address: "Prishtinë, Kosovo",
+      capacity: 450
+    }
+  });
 
-  // Krijo disa Evente
+  // Krijo Evente
   await prisma.event.createMany({
     data: [
       {
+        id: "event-1",
         title: "Tech Conference 2026",
-        description: "Konferenca më e madhe teknologjike në Kosovë",
+        description: "Konferenca vjetore e teknologjisë dhe inovacionit",
         startDate: new Date("2026-06-15T09:00:00"),
-        endDate: new Date("2026-06-15T18:00:00"),
+        endDate: new Date("2026-06-15T17:00:00"),
         price: 49.99,
         capacity: 300,
         venueId: venue.id,
         organizerId: organizer.id
       },
       {
-        title: "Summer Music Festival",
-        description: "Festivale me artistë të njohur",
-        startDate: new Date("2026-07-20T20:00:00"),
-        endDate: new Date("2026-07-21T02:00:00"),
-        price: 35,
-        capacity: 800,
-        venueId: venue.id,
-        organizerId: organizer.id
-      },
-      {
-        title: "Startup Kosovo Summit",
-        description: "Mbledhje e startup-eve dhe investitorëve",
-        startDate: new Date("2026-05-25T10:00:00"),
-        endDate: new Date("2026-05-25T17:00:00"),
-        price: 0,
-        capacity: 400,
+        id: "event-2",
+        title: "Dua Lipa Live in Prishtina",
+        description: "Koncert special me Dua Lipa",
+        startDate: new Date("2026-07-10T21:00:00"),
+        endDate: new Date("2026-07-10T23:30:00"),
+        price: 85,
+        capacity: 1200,
         venueId: venue.id,
         organizerId: organizer.id
       }
     ],
-    skipDuplicates: true,
+    skipDuplicates: true
   });
 
-  console.log('✅ Seed completed successfully!');
+  console.log('✅ Seed completed! 2 events created.');
 }
 
 main()
-  .catch(e => console.error(e))
-  .finally(async () => await prisma.$disconnect());
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());

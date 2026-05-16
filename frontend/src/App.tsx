@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/public/Home';
 import Events from './pages/public/Events';
 import EventDetail from './pages/public/EventDetail';
+import Booking from './pages/booking/Booking';
 import Categories from './pages/public/Categories';
 import Venues from './pages/public/Venues';
 import Login from './pages/public/Login';
@@ -20,6 +21,7 @@ function App() {
         <Route path="/venues" element={<Venues />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/booking/:eventId" element={<Booking />} />
       </Routes>
     </Router>
   );
