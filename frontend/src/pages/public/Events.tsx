@@ -1,90 +1,174 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import EventCard from '../../components/EventCard';
-
-/** Map API / Prisma event shape to EventCard props */
-function toCardEvent(raw: Record<string, unknown>) {
-  const venue = raw.venue as { name?: string; address?: string } | undefined;
-  const id = raw.id as string | number;
-  const start = (raw.startDate as string) || (raw.date as string) || new Date().toISOString();
-  return {
-    id,
-    title: (raw.title as string) || 'Event',
-    date: start,
-    location: venue ? [venue.name, venue.address].filter(Boolean).join(', ') : '—',
-    price: typeof raw.price === 'number' ? raw.price : 0,
-    image:
-      (raw.image as string) ||
-      `https://picsum.photos/seed/${encodeURIComponent(String(id))}/800/600`,
-  };
-}
+import { mapEventForCard } from '../../utils/eventUtils';
+import { Search } from 'lucide-react';
 
 export default function Events() {
   const [events, setEvents] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [category, setCategory] = useState('');
   const [loading, setLoading] = useState(true);
 
+  // Filter States
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [sortBy, setSortBy] = useState('date'); // date, price-low, price-high
+
   useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      setLoading(true);
-      try {
-        const trimmed = searchTerm.trim();
-        const res = trimmed
-          ? await api.get('/api/events/search', { params: { q: trimmed } })
-          : await api.get('/api/events', { params: category ? { category } : {} });
-        if (!cancelled) setEvents(res.data);
-      } catch (err) {
-        console.error(err);
-        if (!cancelled) setEvents([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [searchTerm, category]);
+    fetchEvents();
+  }, [searchTerm, selectedCategory, startDate, endDate, minPrice, maxPrice, sortBy]);
+
+  const fetchEvents = async () => {
+    setLoading(true);
+    try {
+      const params = {
+        q: searchTerm,
+        category: selectedCategory,
+        startDate: startDate,
+        endDate: endDate,
+        minPrice: minPrice,
+        maxPrice: maxPrice,
+        sortBy: sortBy
+      };
+
+      const res = await api.get('/api/events', { params });
+      setEvents(res.data.map(mapEventForCard));
+    } catch (err) {
+      console.error("Error fetching events:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-8">
+    <div className="min-h-screen bg-gray-50 py-10">
       <div className="max-w-6xl mx-auto px-6">
-        <h1 className="text-4xl font-bold mb-8">All Events</h1>
+        <h1 className="text-4xl font-bold mb-8">Discover Events</h1>
 
-        {/* Advanced Search */}
-        <div className="bg-white p-6 rounded-3xl shadow mb-10 flex gap-4 flex-wrap">
-          <input
-            type="text"
-            placeholder="Search events..."
-            className="flex-1 px-6 py-4 border rounded-2xl"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <select 
-            className="px-6 py-4 border rounded-2xl"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
+        {/* Advanced Filters */}
+        <div className="bg-white p-8 rounded-3xl shadow-lg mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            {/* Search */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Kërko</label>
+              <div className="relative">
+                <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Emër eventi ose fjalë kyçe..."
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-indigo-500"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Kategori</label>
+              <select
+                className="w-full py-3 px-4 border border-gray-300 rounded-2xl focus:outline-none"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="">Të gjitha kategoritë</option>
+                <option value="Teknologji">Teknologji</option>
+                <option value="Muzikë">Muzikë</option>
+                <option value="Sport">Sport</option>
+                <option value="Konferencë">Konferencë</option>
+              </select>
+            </div>
+
+            {/* Date Range */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Data nga</label>
+              <input
+                type="date"
+                className="w-full py-3 px-4 border border-gray-300 rounded-2xl"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Data deri</label>
+              <input
+                type="date"
+                className="w-full py-3 px-4 border border-gray-300 rounded-2xl"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+
+            {/* Price Range */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Çmimi min (€)</label>
+              <input
+                type="number"
+                placeholder="0"
+                className="w-full py-3 px-4 border border-gray-300 rounded-2xl"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Çmimi max (€)</label>
+              <input
+                type="number"
+                placeholder="500"
+                className="w-full py-3 px-4 border border-gray-300 rounded-2xl"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+              />
+            </div>
+
+            {/* Sort */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Rendit sipas</label>
+              <select
+                className="w-full py-3 px-4 border border-gray-300 rounded-2xl"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="date">Data (më të afërt)</option>
+                <option value="price-low">Çmimi (nga më i ulëti)</option>
+                <option value="price-high">Çmimi (nga më i larti)</option>
+              </select>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              setSearchTerm(''); setSelectedCategory(''); setStartDate('');
+              setEndDate(''); setMinPrice(''); setMaxPrice('');
+            }}
+            className="mt-6 text-red-600 hover:text-red-700 font-medium"
           >
-            <option value="">All Categories</option>
-            <option value="Teknologji">Teknologji</option>
-            <option value="Muzikë">Muzikë</option>
-            <option value="Sport">Sport</option>
-          </select>
+            Pastro Filtrat
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {loading ? (
-            <p className="text-gray-600 col-span-full">Loading events…</p>
-          ) : events.length === 0 ? (
-            <p className="text-gray-600 col-span-full">No events found.</p>
-          ) : (
-            events.map((event) => (
-              <EventCard key={String(event.id)} event={toCardEvent(event as Record<string, unknown>)} />
-            ))
-          )}
+        {/* Results */}
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-semibold">
+            Rezultate: {events.length} evente
+          </h2>
         </div>
+
+        {loading ? (
+          <p className="text-center py-10">Loading events...</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {events.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

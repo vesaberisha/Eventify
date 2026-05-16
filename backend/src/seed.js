@@ -35,6 +35,7 @@ async function main() {
         id: "event-1",
         title: "Tech Conference 2026",
         description: "Konferenca vjetore e teknologjisë dhe inovacionit",
+        imageUrl: "https://picsum.photos/seed/tech-conference-2026/800/600",
         startDate: new Date("2026-06-15T09:00:00"),
         endDate: new Date("2026-06-15T17:00:00"),
         price: 49.99,
@@ -46,10 +47,23 @@ async function main() {
         id: "event-2",
         title: "Dua Lipa Live in Prishtina",
         description: "Koncert special me Dua Lipa",
+        imageUrl: "https://picsum.photos/seed/dua-lipa-prishtina/800/600",
         startDate: new Date("2026-07-10T21:00:00"),
         endDate: new Date("2026-07-10T23:30:00"),
         price: 85,
         capacity: 1200,
+        venueId: venue.id,
+        organizerId: organizer.id
+      },
+      {
+        id: "event-3",
+        title: "Startup Kosovo Summit",
+        description: "Takimi më i madh i startup-eve në Kosovë",
+        imageUrl: "https://picsum.photos/seed/startup-kosovo-summit/800/600",
+        startDate: new Date("2026-05-10T09:00:00"),
+        endDate: new Date("2026-05-10T18:00:00"),
+        price: 0,
+        capacity: 500,
         venueId: venue.id,
         organizerId: organizer.id
       }

@@ -16,6 +16,7 @@ export const getAllEvents = async (query = {}) => {
     where,
     include: {
       venue: true,
+      images: true,
       categories: { include: { category: true } },
       organizer: { select: { firstName: true, lastName: true } },
     },
@@ -41,6 +42,7 @@ export const getEventById = async (id) => {
     where: { id },
     include: {
       venue: true,
+      images: true,
       categories: { include: { category: true } },
       ticketTypes: true,
       reviews: true,
