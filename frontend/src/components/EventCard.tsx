@@ -1,8 +1,9 @@
+import { Link } from 'react-router-dom';
 import { Calendar, MapPin, DollarSign } from 'lucide-react';
 
 interface EventProps {
   event: {
-    id: number;
+    id: number | string;
     title: string;
     date: string;
     location: string;
@@ -37,9 +38,12 @@ export default function EventCard({ event }: EventProps) {
             <DollarSign size={28} />
             {event.price === 0 ? 'Falas' : `${event.price} €`}
           </div>
-          <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 rounded-2xl text-lg font-medium transition">
+          <Link
+            to={`/event/${event.id}`}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 rounded-2xl text-lg font-medium transition inline-block text-center"
+          >
             Detaje
-          </button>
+          </Link>
         </div>
       </div>
     </div>
