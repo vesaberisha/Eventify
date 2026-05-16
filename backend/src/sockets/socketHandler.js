@@ -6,32 +6,36 @@ let io;
 
 export const initSocket = (server) => {
   io = new Server(server, {
-    cors: { origin: "*" },
+    cors: { origin: "http://localhost:3000" },
   });
 
-  const redisUrl = process.env.REDIS_URL;
-  if (redisUrl) {
-    const pubClient = createClient({ url: redisUrl });
-    const subClient = pubClient.duplicate();
+  const pubClient = createClient({
+    url: process.env.REDIS_URL || "redis://localhost:6379",
+  });
+  const subClient = pubClient.duplicate();
 
-    Promise.all([pubClient.connect(), subClient.connect()])
-      .then(() => {
-        io.adapter(createAdapter(pubClient, subClient));
-        console.log("✅ Socket.IO + Redis Adapter connected");
-      })
-      .catch((err) => {
-        console.warn("⚠️ Redis unavailable; Socket.IO running without adapter:", err.message);
-      });
-  } else {
-    console.log("ℹ️ REDIS_URL not set; Socket.IO running without Redis adapter");
-  }
+  Promise.all([pubClient.connect(), subClient.connect()])
+    .then(() => {
+      io.adapter(createAdapter(pubClient, subClient));
+      console.log("✅ Redis + Socket.IO Adapter initialized");
+    })
+    .catch((err) => {
+      console.warn(
+        "⚠️ Redis unavailable — Socket.IO running without adapter:",
+        err.message
+      );
+    });
 
   io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
+    console.log("🔌 User connected:", socket.id);
+
+    socket.on("joinUserRoom", (userId) => {
+      socket.join(`user-${userId}`);
+      console.log(`User ${userId} joined their room`);
+    });
 
     socket.on("joinEventRoom", (eventId) => {
       socket.join(`event-${eventId}`);
-      console.log(`User joined event room: ${eventId}`);
     });
 
     socket.on("disconnect", () => {

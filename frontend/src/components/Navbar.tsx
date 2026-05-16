@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, Search, User, LogOut } from 'lucide-react';
+import { useNotifications } from '../hooks/useNotifications';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
+  const { unreadCount } = useNotifications(user?.id);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -39,7 +41,22 @@ export default function Navbar() {
 
           {/* Right Side */}
           <div className="flex items-center gap-4">
+
+            {user && (
+  <div className="relative cursor-pointer" onClick={() => {/* hap modal notifications */}}>
+    <div className="relative">
+      <span className="text-2xl">🛎️</span>
+      {unreadCount > 0 && (
+        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+          {unreadCount}
+        </span>
+      )}
+    </div>
+  </div>
+)}
+            
             {user ? (
+              
               <>
                 <div className="hidden md:flex items-center gap-2 text-gray-700">
                   <User size={20} />
