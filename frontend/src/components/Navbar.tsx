@@ -37,6 +37,10 @@ export default function Navbar() {
             <Link to="/" className="hover:text-indigo-600 transition">Home</Link>
             <Link to="/events" className="hover:text-indigo-600 transition">Events</Link>
             <Link to="/categories" className="hover:text-indigo-600 transition">Categories</Link>
+            <Link to="/my-bookings" className="hover:text-indigo-600 transition">My Bookings</Link>
+            {user?.role === 'ADMIN' && (
+  <Link to="/admin" className="hover:text-indigo-600 transition">Admin</Link>
+)}
           </div>
 
           {/* Right Side */}

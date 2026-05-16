@@ -4,9 +4,12 @@ import { createClient } from "redis";
 
 let io;
 
+const frontendOrigin =
+  process.env.FRONTEND_URL || "http://localhost:5173";
+
 export const initSocket = (server) => {
   io = new Server(server, {
-    cors: { origin: "http://localhost:3000" },
+    cors: { origin: frontendOrigin },
   });
 
   const pubClient = createClient({

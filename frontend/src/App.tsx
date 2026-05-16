@@ -9,6 +9,8 @@ import Venues from './pages/public/Venues';
 import Login from './pages/public/Login';
 import Register from './pages/public/Register';
 import PaymentSuccess from './pages/booking/Payment';
+import MyBookings from './pages/dashboard/MyBookings';
+import AdminDashboard from './pages/admin/AdminDashboard';
 
 function App() {
   return (
@@ -20,6 +22,8 @@ function App() {
         <Route path="/event/:id" element={<EventDetail />} />
         <Route path="/categories" element={<Categories />} />
         <Route path="/venues" element={<Venues />} />
+        <Route path="/my-bookings" element={<MyBookings />} />
+        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/booking/:eventId" element={<Booking />} />
