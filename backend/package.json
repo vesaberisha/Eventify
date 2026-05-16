@@ -9,20 +9,20 @@
     "seed": "node src/seed.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "prisma": "^5.15.0",
     "@prisma/client": "^5.15.0",
+    "@socket.io/redis-adapter": "^8.3.0",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
+    "better-sqlite3": "^11.7.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "socket.io": "^4.7.5",
-    "@socket.io/redis-adapter": "^8.3.0",
-    "redis": "^4.6.14",
-    "stripe": "^15.5.0",
     "exceljs": "^4.4.0",
-    "zod": "^3.23.8",
-    "better-sqlite3": "^11.7.0"
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "prisma": "^5.15.0",
+    "redis": "^4.6.14",
+    "socket.io": "^4.7.5",
+    "stripe": "^15.12.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "nodemon": "^3.1.4"
